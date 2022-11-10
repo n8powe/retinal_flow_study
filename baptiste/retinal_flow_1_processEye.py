@@ -46,9 +46,9 @@ print('Frame size :', frameSize)
 print('Frame count : ', frameCount)
 
 # Illumination of the eye video is not homogenous, images are detrended to improve results
-x, y = np.meshgrid(range(-frameHeight//2, frameHeight//2),
-                range(-frameWidth//2, frameWidth//2), indexing='ij')
-regressors = np.vstack([np.ravel(x), np.ravel(y), np.sqrt(np.power(x, 2)+np.power(y, 2)).ravel()]).T
+x, y = np.meshgrid(range(-frameHeight // 2, frameHeight // 2),
+                   range(-frameWidth // 2, frameWidth // 2), indexing='ij')
+regressors = np.vstack([np.ravel(x), np.ravel(y), np.sqrt(np.power(x, 2) + np.power(y, 2)).ravel()]).T
 
 # create 2D detector from pupillabs
 detector_2d = Detector2D()
@@ -62,15 +62,22 @@ vidOut = cv2.VideoWriter('{0}/{1}_processed.mp4'.format(dataPath, fileName),
                          cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, frameSize)
 # This is a video with pupil fits
 if makePupilVideo:
-    vidPupil = cv2.VideoWriter('%s/%s_pupil.mp4' % (dataPath,fileName),
-                              cv2.VideoWriter_fourcc('M','J','P','G'), 90, frameSize, 1)
+    vidPupil = cv2.VideoWriter('%s/%s_pupil.mp4' % (dataPath, fileName),
+                               cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 90, frameSize, 1)
 
 # Panda frame with eye positions
-eyePosition = pd.DataFrame(columns = ['X','Y','D','C'])
-
+# targetPosition = pd.DataFrame(data=data)
+# targetPosition = targetPosition.assign(tgX=np.full(targetPosition.shape[0], np.nan))
+# targetPosition = targetPosition.assign(tgY=np.full(targetPosition.shape[0], np.nan))
+# eyePosition = pd.DataFrame(columns=['X', 'Y', 'D', 'C'])
+eyePosition = pd.DataFrame(data=triggersData)
+eyePosition = eyePosition.assign(eyeX=np.full(eyePosition.shape[0], np.nan))
+eyePosition = eyePosition.assign(eyeY=np.full(eyePosition.shape[0], np.nan))
+eyePosition = eyePosition.assign(eyeD=np.full(eyePosition.shape[0], np.nan))
+eyePosition = eyePosition.assign(eyeC=np.full(eyePosition.shape[0], np.nan))
 
 for frameNum in range(0, triggersData.shape[0]):
-    print("Rewriting ... %3.1f%%" % (100*frameNum/triggersData.shape[0]))
+    print("Rewriting ... %3.1f%%" % (100 * frameNum / triggersData.shape[0]))
     ret, frame = vidIn.read()
 
     # First write the raw frame in processed video
@@ -96,8 +103,13 @@ for frameNum in range(0, triggersData.shape[0]):
 
     # Run the pupil_detector
     result2d = detector_2d.detect(grayDenoised)
-    eyePosition.loc[len(eyePosition.index)] = [result2d["ellipse"]['center'][0], result2d["ellipse"]['center'][1],
-                                               result2d['diameter'], result2d['confidence']]
+    # eyePosition.loc[len(eyePosition.index)] = [result2d["ellipse"]['center'][0], result2d["ellipse"]['center'][1],
+    #                                            result2d['diameter'], result2d['confidence']]
+    eyePosition['eyeX'].loc[frameNum] = result2d["ellipse"]['center'][0]
+    eyePosition['eyeY'].loc[frameNum] = result2d["ellipse"]['center'][1]
+    eyePosition['eyeD'].loc[frameNum] = result2d['diameter']
+    eyePosition['eyeC'].loc[frameNum] = result2d['confidence']
+
     logging.info('Detected pupil')
 
     if makePupilVideo:
@@ -111,7 +123,6 @@ for frameNum in range(0, triggersData.shape[0]):
         # cv2.waitKey(1)
         vidPupil.write(drawing)
 
-
 # save the dataframe as a csv file
 eyePosition.to_csv('%s/%s_eyePosition.csv' % (dataPath, fileName))
 
@@ -121,4 +132,3 @@ vidOut.release()
 if makePupilVideo:
     vidPupil.release()
 # cv2.destroyAllWindows()
-
