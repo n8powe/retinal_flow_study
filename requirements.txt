@@ -7,3 +7,4 @@ matplotlib
 opencv-python
 opencv-contrib-python
 parse
+Pillow

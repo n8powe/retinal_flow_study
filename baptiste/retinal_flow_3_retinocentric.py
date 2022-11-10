@@ -20,12 +20,12 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 
 # Load datasets
-dataPath = '../../retinal_flow_data'
+dataPath = '../../retinal_flow_data/'
 eyeFile = 'eye_2022-11-08_19-54-09_eyePosition.csv'
 sceneFile = 'scene_2022-11-08_19-54-09_targetPosition.csv'
 
-eyeDat = pd.read_csv(dataPath+'/'+eyeFile, sep=',', names=['F',	'T', 'I', 'X', 'Y', 'D', 'C'], header=0, skiprows=0).values
-sceneDat = pd.read_csv(dataPath+'/'+sceneFile, sep=',', names=['T', 'I', 'X', 'Y'], header=0, skiprows=0).values
+eyeDat = pd.read_csv(dataPath+eyeFile, sep=',', names=['F',	'T', 'I', 'X', 'Y', 'D', 'C'], header=0, skiprows=0).values
+sceneDat = pd.read_csv(dataPath+sceneFile, sep=',', names=['T', 'I', 'X', 'Y'], header=0, skiprows=0).values
 
 # Find trigger times
 eyeTrigOn, = np.where(eyeDat[1:, 2]-eyeDat[:-1, 2] > 0.5)
@@ -72,26 +72,20 @@ plt.show()
 
 # Eye and target positions are resampled at the same FPS. Because most data points are missing for the target,
 # I use nearest interpolation
-resamplingTimes = np.arange(0, round(eyeDat[eyeCalibStop, 1]-eyeDat[eyeStart, 1]))
-# eyeXresampled = np.interp(resamplingTimes,
-#                           eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeStart, 1],
-#                           eyeDat[eyeCalibStart:eyeCalibStop, 3])
-# sceneXresampled = np.interp(resamplingTimes,
-#                           sceneDat[sceneCalibStart:sceneCalibStop, 1]-sceneDat[sceneStart, 0],
-#                           sceneDat[sceneCalibStart:sceneCalibStop, 3])
-feyeX = interpolate.interp1d(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeStart, 1],
+resamplingTimes = np.arange(0, round(eyeDat[eyeCalibStop, 1]-eyeDat[eyeCalibStart, 1]))
+feyeX = interpolate.interp1d(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeCalibStart, 1],
                              eyeDat[eyeCalibStart:eyeCalibStop, 3], kind='nearest',
                              bounds_error=False)
 eyeXresampled = feyeX(resamplingTimes)
-fsceneX = interpolate.interp1d(sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneStart, 0],
+fsceneX = interpolate.interp1d(sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneCalibStart, 0],
                                sceneDat[sceneCalibStart:sceneCalibStop, 2], kind='nearest',
                              bounds_error=False)
 sceneXresampled = fsceneX(resamplingTimes)
-feyeY = interpolate.interp1d(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeStart, 1],
+feyeY = interpolate.interp1d(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeCalibStart, 1],
                              eyeDat[eyeCalibStart:eyeCalibStop, 4], kind='nearest',
                              bounds_error=False)
 eyeYresampled = feyeY(resamplingTimes)
-fsceneY = interpolate.interp1d(sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneStart, 0],
+fsceneY = interpolate.interp1d(sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneCalibStart, 0],
                                sceneDat[sceneCalibStart:sceneCalibStop, 3], kind='nearest',
                              bounds_error=False)
 sceneYresampled = fsceneY(resamplingTimes)
@@ -133,6 +127,24 @@ plt.plot(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeStart, 1], predEyePosY,
 plt.xlabel('Time (msec)')
 plt.ylabel('Target Y')
 plt.show()
+
+# Predict eye position during the headfix session for comparison with eyelink
+resamplingTimes = np.arange(0, round(eyeDat[eyeStop, 1]-eyeDat[eyeStart, 1]))
+feyeX = interpolate.interp1d(eyeDat[eyeStart:(eyeStop+1), 1]-eyeDat[eyeStart, 1],
+                             eyeDat[eyeStart:(eyeStop+1), 3], kind='nearest',
+                             bounds_error=False)
+eyeXresampled = feyeX(resamplingTimes)
+feyeY = interpolate.interp1d(eyeDat[eyeStart:(eyeStop+1), 1]-eyeDat[eyeStart, 1],
+                             eyeDat[eyeStart:(eyeStop+1), 4], kind='nearest',
+                             bounds_error=False)
+eyeYresampled = feyeY(resamplingTimes)
+
+predHFX = regX.predict(sm.add_constant(eyeXresampled))
+predHFY = regY.predict(sm.add_constant(eyeYresampled))
+
+pd.DataFrame(np.concatenate(([predHFX], [predHFY]), axis=0).T, columns=['eyeX', 'eyeY']).to_csv(dataPath+'eyeCalib.csv')
+
+
 
 # Now regress the whole eye trace
 resamplingTimes = np.arange(eyeDat[0, 1], eyeDat[-1, 1])
