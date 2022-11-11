@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 
 # Load datasets
 dataPath = '../../retinal_flow_data/'
+vidName = 'scene_2022-11-08_19-54-09'
 eyeFile = 'eye_2022-11-08_19-54-09_eyePosition.csv'
 sceneFile = 'scene_2022-11-08_19-54-09_targetPosition.csv'
 
@@ -145,8 +146,7 @@ predHFY = regY.predict(sm.add_constant(eyeYresampled))
 pd.DataFrame(np.concatenate(([predHFX], [predHFY]), axis=0).T, columns=['eyeX', 'eyeY']).to_csv(dataPath+'eyeCalib.csv')
 
 
-
-# Now regress the whole eye trace
+# Now regress the whole resampled eye trace
 resamplingTimes = np.arange(eyeDat[0, 1], eyeDat[-1, 1])
 notBlinks = (eyeDat[:, 3]>0)
 feyeX = interpolate.interp1d(eyeDat[notBlinks, 1], eyeDat[notBlinks, 3], kind='nearest', bounds_error=False)
@@ -162,4 +162,34 @@ plt.subplot(212)
 plt.plot(resamplingTimes, allEyeY)
 plt.show()
 
+# Generate a video with the eye-position on it
 
+# Open video and trigger files
+vidIn = cv2.VideoCapture('%s/%s_processed.avi' % (dataPath, vidName))
+fps = 30
+frameWidth = int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH))
+frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
+frameSize = (frameWidth, frameHeight)
+vidOut = cv2.VideoWriter('{0}/{1}_eyePos.mp4'.format(dataPath, vidName),
+                             cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, frameSize)
+
+
+predX = regX.predict(sm.add_constant(eyeDat[:, 3]))
+predY = regX.predict(sm.add_constant(eyeDat[:, 4]))
+
+ff = -1
+while 1:
+    ret, frame = vidIn.read()
+    if ret:
+        ff = ff+1
+        eyeSample = np.where(eyeDat[:, 1]-eyeDat[eyeStart, 1] > sceneDat[ff, 0]-sceneDat[sceneStart, 0])[0][0]
+        print(eyeSample)
+        gazeX = predX[eyeSample]
+        gazeY = predY[eyeSample]
+        cv2.circle(frame, (int(gazeX), int(gazeY)), 10, (0, 0, 255), -1)
+
+        cv2.imshow('picture', frame)
+        cv2.waitKey(10)
+    else:
+        break
+vidIn.release()

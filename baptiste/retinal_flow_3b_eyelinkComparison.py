@@ -15,6 +15,7 @@ import numpy as np
 from parse import parse
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy import interpolate
 import statsmodels.api as sm
 from sklearn.linear_model import LinearRegression
 
@@ -77,20 +78,42 @@ plt.show()
 
 # Now load the preprocessed eye and scene data from pitracker
 pitrackerDF = pd.read_csv(dataPath+'eyeCalib.csv')
-print(pitrackerDF)
 
 # plot raw data
-plt.subplot(311)
+plt.subplot(211)
 plt.plot(df.Time[linkStart:linkStop]-df.Time[linkStart], df.EyeX[linkStart:linkStop],
          np.arange(0, pitrackerDF.shape[0]), pitrackerDF.eyeX)
-plt.subplot(312)
+plt.subplot(212)
 plt.plot(df.Time[linkStart:linkStop]-df.Time[linkStart], df.EyeY[linkStart:linkStop],
          np.arange(0, pitrackerDF.shape[0]), pitrackerDF.eyeY)
-# plt.subplot(313)
-# plt.plot(df.Time[linkStart:linkStop]-df.Time[linkStart], df.EyeY[linkStart:linkStop],
-#          np.arange(0, pitrackerDF.shape[0]), pitrackerDF.eyeY)
-
 plt.show()
-#
-# model = LinearRegression().fit(sm.add_constant(pitrackerDF.eyeY), df.EyeY[linkStart:(linkStart+pitrackerDF.shape[0])])
 
+# Resample eyelink data (because some frames are skipped)
+resamplingTimes = np.arange(0, pitrackerDF.shape[0])
+filtVec = np.logical_and(df.Time>=df.Time[linkStart] , df.Time-df.Time[linkStart] < pitrackerDF.shape[0])
+feyeX = interpolate.interp1d(df.Time[filtVec]-df.Time[linkStart],
+                             df.EyeX[filtVec],
+                             kind='nearest', bounds_error=False)
+eyeXresampled = feyeX(resamplingTimes)
+feyeY = interpolate.interp1d(df.Time[filtVec]-df.Time[linkStart],
+                             df.EyeY[filtVec],
+                             kind='nearest', bounds_error=False)
+eyeYresampled = feyeY(resamplingTimes)
+
+
+# Now regress eyelink position with pitracker position
+notblinks = pitrackerDF.eyeX>0
+modelX = LinearRegression().fit(sm.add_constant(pitrackerDF.eyeX[notblinks]), eyeXresampled[notblinks])
+modelY = LinearRegression().fit(sm.add_constant(pitrackerDF.eyeY[notblinks]), eyeYresampled[notblinks])
+
+predX = modelX.predict(sm.add_constant(pitrackerDF.eyeX))
+predY = modelY.predict(sm.add_constant(pitrackerDF.eyeY))
+
+print(modelX.intercept_)
+print(modelX.coef_)
+
+plt.subplot(211)
+plt.plot(resamplingTimes[notblinks], predX[notblinks], resamplingTimes[notblinks], eyeXresampled[notblinks])
+plt.subplot(212)
+plt.plot(resamplingTimes[notblinks], predY[notblinks], resamplingTimes[notblinks], eyeYresampled[notblinks])
+plt.show()
