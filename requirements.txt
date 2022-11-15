@@ -4,7 +4,6 @@ scikit-learn
 statsmodels
 pandas
 matplotlib
-opencv-python
 opencv-contrib-python
 parse
 Pillow

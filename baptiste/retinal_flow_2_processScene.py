@@ -17,19 +17,24 @@ import pandas as pd
 extractOpticalFlow = 0
 
 # Scene video name and path
-dataPath = '../../retinal_flow_data/'
+dataPath = '../../retinal_flow_data'
 fileName = 'scene_2022-11-08_19-54-09'
 
+triggersData = pd.read_csv('%s/%s.txt' % (dataPath, fileName), sep=',', names=['frameTimes', 'trigger'], header=0,
+                   skiprows=0).values
+
 # Process video if not processed yet
-if not os.path.exists('%s/%s_processed.avi' % (dataPath, fileName)):
+if not os.path.exists('%s/%s_processed.mp4' % (dataPath, fileName)):
     vidIn = cv2.VideoCapture('{0}/{1}.mjpeg'.format(dataPath, fileName))
     fps = 30
     frameWidth = int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH))
     frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frameSize = (frameWidth, frameHeight)
-    vidOut = cv2.VideoWriter('{0}/{1}_processed.mp4'.format(dataPath, fileName),
+    vidOut = cv2.VideoWriter('%s/%s_processed.mp4' % (dataPath, fileName),
                              cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, frameSize)
+    frameNum = -1
     while 1:
+        frameNum = frameNum+1
         print("Rewriting ... %3.1f%%" % (100 * frameNum / triggersData.shape[0]))
         ret, frame = vidIn.read()
         if ret:
@@ -40,18 +45,16 @@ if not os.path.exists('%s/%s_processed.avi' % (dataPath, fileName)):
     vidOut.release()
 
 # Open processed video and trigger files,
-vidIn = cv2.VideoCapture('%s/%s_processed.avi' % (dataPath, fileName))
-data = pd.read_csv('%s/%s.txt' % (dataPath, fileName), sep=',', names=['frameTimes', 'trigger'], header=0,
-                   skiprows=0).values
+vidIn = cv2.VideoCapture('%s/%s_processed.mp4' % (dataPath, fileName))
 
 imageSize = (int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH)), int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
-fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
 writer = cv2.VideoWriter('%s/%s_trimmed.mp4' % (dataPath, fileName), fourcc, 30, imageSize)
 
 # Detect when tasks started and ended (from the trigger)
-trigOn, = np.where(data[1:, 1] - data[:-1, 1] > 0.5)
-trigOff, = np.where(data[1:, 1] - data[:-1, 1] < -0.5)
+trigOn, = np.where(triggersData[1:, 1] - triggersData[:-1, 1] > 0.5)
+trigOff, = np.where(triggersData[1:, 1] - triggersData[:-1, 1] < -0.5)
 trigDur = trigOff - trigOn
 taskStart = trigOn[trigDur > 80]
 taskStop = trigOff[trigDur > 80]
@@ -113,7 +116,7 @@ cv2.destroyAllWindows()
 print("Detect targets")
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
-targetPosition = pd.DataFrame(data=data)
+targetPosition = pd.DataFrame(data=triggersData)
 targetPosition = targetPosition.assign(tgX=np.full(targetPosition.shape[0], np.nan))
 targetPosition = targetPosition.assign(tgY=np.full(targetPosition.shape[0], np.nan))
 
@@ -157,8 +160,8 @@ if extractOpticalFlow:
     deepF = cv2.optflow.createOptFlow_DeepFlow()
     ret, frame = vidIn.read()
     grayOld = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    for ff in range(trigOff[-1]+1, data.shape[0]):
-        print('Extracting flow %.2f' % (100*(ff-trigOff[-1]-1)/(data.shape[0]-trigOff[-1]-1)))
+    for ff in range(trigOff[-1]+1, triggersData.shape[0]):
+        print('Extracting flow %.2f' % (100*(ff-trigOff[-1]-1)/(triggersData.shape[0]-trigOff[-1]-1)))
         ret, frame = vidIn.read()
         grayNew = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         flowDF = deepF.calc(grayOld, grayNew, None)
