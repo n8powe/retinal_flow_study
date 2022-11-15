@@ -31,7 +31,7 @@ if not os.path.exists('%s/%s_processed.mp4' % (dataPath, fileName)):
     frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frameSize = (frameWidth, frameHeight)
     vidOut = cv2.VideoWriter('%s/%s_processed.mp4' % (dataPath, fileName),
-                             cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, frameSize)
+                             cv2.VideoWriter_fourcc('mp4v'), fps, frameSize)
     frameNum = -1
     while 1:
         frameNum = frameNum+1
@@ -49,7 +49,7 @@ vidIn = cv2.VideoCapture('%s/%s_processed.mp4' % (dataPath, fileName))
 
 imageSize = (int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH)), int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
-fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
+fourcc = cv2.VideoWriter_fourcc('mp4v')
 writer = cv2.VideoWriter('%s/%s_trimmed.mp4' % (dataPath, fileName), fourcc, 30, imageSize)
 
 # Detect when tasks started and ended (from the trigger)

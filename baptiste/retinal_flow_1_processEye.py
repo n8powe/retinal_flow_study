@@ -28,8 +28,8 @@ dataPath = '../../retinal_flow_data/'
 fileName = 'eye_2022-11-08_19-54-09'
 
 # Open eye video and triggers file
-vidIn = cv2.VideoCapture('{0}/{1}.mjpeg'.format(dataPath, fileName))
-triggersData = pd.read_csv('{0}/{1}.txt'.format(dataPath, fileName), sep=',', names=['frameTimes', 'trigger'],
+vidIn = cv2.VideoCapture('%s/%s.mjpeg' % (dataPath, fileName))
+triggersData = pd.read_csv('%s/%s.txt' % (dataPath, fileName), sep=',', names=['frameTimes', 'trigger'],
                            header=0, skiprows=0).values
 
 if not vidIn.isOpened():
@@ -58,12 +58,12 @@ detector_2d = Detector2D()
 # detector_3d = Detector3D(camera=camera, long_term_mode=DetectorMode.blocking)
 
 # This is the regular processed video
-vidOut = cv2.VideoWriter('{0}/{1}_processed.mp4'.format(dataPath, fileName),
-                         cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, frameSize)
+vidOut = cv2.VideoWriter('%s/%s_processed.mp4' % (dataPath, fileName),
+                         cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, frameSize)
 # This is a video with pupil fits
 if makePupilVideo:
     vidPupil = cv2.VideoWriter('%s/%s_pupil.mp4' % (dataPath, fileName),
-                               cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 90, frameSize, 1)
+                               cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 90, frameSize, 1)
 
 # Panda frame with eye positions
 # targetPosition = pd.DataFrame(data=data)
