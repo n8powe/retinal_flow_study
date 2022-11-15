@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
-extractOpticalFlow = 0
+extractOpticalFlow = 1
 
 # Scene video name and path
 dataPath = '../../retinal_flow_data'
@@ -31,7 +31,7 @@ if not os.path.exists('%s/%s_processed.mp4' % (dataPath, fileName)):
     frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frameSize = (frameWidth, frameHeight)
     vidOut = cv2.VideoWriter('%s/%s_processed.mp4' % (dataPath, fileName),
-                             cv2.VideoWriter_fourcc('mp4v'), fps, frameSize)
+                             cv2.VideoWriter_fourcc('m','p','4','v'), fps, frameSize)
     frameNum = -1
     while 1:
         frameNum = frameNum+1
@@ -49,7 +49,7 @@ vidIn = cv2.VideoCapture('%s/%s_processed.mp4' % (dataPath, fileName))
 
 imageSize = (int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH)), int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
-fourcc = cv2.VideoWriter_fourcc('mp4v')
+fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
 writer = cv2.VideoWriter('%s/%s_trimmed.mp4' % (dataPath, fileName), fourcc, 30, imageSize)
 
 # Detect when tasks started and ended (from the trigger)
@@ -149,13 +149,14 @@ for ff in range(taskStart[1] + 1, taskStop[1]):
 # save the dataframe as a csv file
 targetPosition.to_csv('%s/%s_targetPosition.csv' % (dataPath, fileName))
 
-vidIn.release()
 cv2.destroyAllWindows()
 
 
 
 # Now we will calculate optical flow
 if extractOpticalFlow:
+    if not os.path.exists('%s/flow/' % dataPath):
+        os.mkdir('%s/flow/' % dataPath)
     vidIn.set(cv2.CAP_PROP_POS_FRAMES, trigOff[-1])
     deepF = cv2.optflow.createOptFlow_DeepFlow()
     ret, frame = vidIn.read()
@@ -165,5 +166,8 @@ if extractOpticalFlow:
         ret, frame = vidIn.read()
         grayNew = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         flowDF = deepF.calc(grayOld, grayNew, None)
-        np.save(dataPath+'flow/'+'frame%d.npy' % ff, flowDF)
+        np.save(dataPath+'/flow/'+'frame%d.npy' % ff, flowDF)
         grayOld = grayNew
+
+vidIn.release()
+cv2.destroyAllWindows()
