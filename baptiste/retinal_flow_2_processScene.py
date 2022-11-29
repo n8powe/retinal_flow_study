@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
-extractOpticalFlow = 1
+extractOpticalFlow = 0
 
 # Scene video name and path
 dataPath = '../../retinal_flow_data'
@@ -31,18 +31,19 @@ if not os.path.exists('%s/%s_processed.mp4' % (dataPath, fileName)):
     frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frameSize = (frameWidth, frameHeight)
     vidOut = cv2.VideoWriter('%s/%s_processed.mp4' % (dataPath, fileName),
-                             cv2.VideoWriter_fourcc('m','p','4','v'), fps, frameSize)
+                             cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, frameSize)
     frameNum = -1
     while 1:
         frameNum = frameNum+1
         print("Rewriting ... %3.1f%%" % (100 * frameNum / triggersData.shape[0]))
         ret, frame = vidIn.read()
         if ret:
-            vidOut.write(frame)
+            vidOut.write(cv2.rotate(frame, cv2.ROTATE_180))
         else:
             break
     vidIn.release()
     vidOut.release()
+
 
 # Open processed video and trigger files,
 vidIn = cv2.VideoCapture('%s/%s_processed.mp4' % (dataPath, fileName))
@@ -58,7 +59,6 @@ trigOff, = np.where(triggersData[1:, 1] - triggersData[:-1, 1] < -0.5)
 trigDur = trigOff - trigOn
 taskStart = trigOn[trigDur > 80]
 taskStop = trigOff[trigDur > 80]
-
 
 # Generate the same charuco board used for calibration
 gridSize = (14, 7)
@@ -116,6 +116,9 @@ cv2.destroyAllWindows()
 print("Detect targets")
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
+fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+writer = cv2.VideoWriter('%s/%s_calibration.mp4' % (dataPath, fileName), fourcc, 30, imageSize)
+
 targetPosition = pd.DataFrame(data=triggersData)
 targetPosition = targetPosition.assign(tgX=np.full(targetPosition.shape[0], np.nan))
 targetPosition = targetPosition.assign(tgY=np.full(targetPosition.shape[0], np.nan))
@@ -145,10 +148,12 @@ for ff in range(taskStart[1] + 1, taskStop[1]):
 
     cv2.imshow('picture', frame)
     cv2.waitKey(10)
+    writer.write(frame)
 
 # save the dataframe as a csv file
 targetPosition.to_csv('%s/%s_targetPosition.csv' % (dataPath, fileName))
 
+writer.release()
 cv2.destroyAllWindows()
 
 

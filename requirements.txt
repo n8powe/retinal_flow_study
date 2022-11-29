@@ -8,3 +8,4 @@ opencv-contrib-python
 parse
 Pillow
 pupil_detectors
+psychopy
