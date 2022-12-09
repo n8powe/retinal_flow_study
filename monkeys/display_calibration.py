@@ -3,6 +3,8 @@ import time, serial
 from psychopy import core, event, visual, monitors
 import cv2
 
+serialAddress = '/dev/ttyACM1'
+
 screenNum = 1
 screenRes = np.array([1920, 1080])
 targetNumber = 3
@@ -33,7 +35,7 @@ class Talker:
     TERMINATOR = '\r'.encode('UTF8')
 
     def __init__(self, timeout=1):
-        self.serial = serial.Serial('/dev/ttyACM0', baudrate=9600, timeout=timeout)
+        self.serial = serial.Serial(serialAddress, baudrate=9600, timeout=timeout)
         while self.serial.in_waiting:
             self.serial.read()
 
@@ -96,7 +98,7 @@ for target in range(0, targetNumber ** 2):
         image_stim.append(visual.ImageStim(win, image=img, mask=None, units='pix', pos=arucoPos, size=50))
 
     try:
-        arduino.send('S()')
+        arduino.send('on()')
     except Exception as e:
         print(e)
 
@@ -119,7 +121,7 @@ for target in range(0, targetNumber ** 2):
         check_key()
 
     try:
-        arduino.send('E()')
+        arduino.send('off()')
     except Exception as e:
         print(e)
 
