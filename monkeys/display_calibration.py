@@ -1,6 +1,7 @@
 import numpy as np
 import time, serial
 from psychopy import core, event, visual, monitors
+from psychopy.hardware import crs
 import cv2
 
 serialAddress = '/dev/ttyACM1'
@@ -74,10 +75,45 @@ except Exception as e:
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 markersNumber = 4
 
+# Generate charuco board
+board = cv2.aruco.CharucoBoard_create(7, 5, 1, .8, dictionary)
+imboard = 2.0*board.draw((1400, 1000))/255.0-1
+
 # Setup window
 monitor = monitors.Monitor('MonkeyCalib', width=53, distance=50)
 win = visual.Window(screenRes, screen=screenNum, units="pix", fullscr=False, monitor=monitor)
+
+# Store info about the experiment session
+# expName = 'crsTest'  # from the Builder filename that created this script
+# expInfo = {'Device': 'Display++',
+#            'Analog': 'No',
+#            'Touch screen': 'Yes',
+#            'Button box': 'CB6',
+#            'Monitor': 'Display++160',
+#            'LUTfile': 'invGammaLUT.txt',
+#            'Screen': '1'}
+#
+# # Setup the Window
+# print("Open window")
+# win = visual.Window(
+#     size=(800, 600), fullscr=True, screen=int(expInfo['Screen']),
+#     allowGUI=False, allowStencil=False,
+#     monitor=expInfo['Monitor'], color=[0,0,0], colorSpace='rgb',
+#     blendMode='avg', useFBO=True,
+#     units='deg')
 clock = core.Clock()
+
+
+# First display charuco board
+im_bg = visual.Rect(win, width=1400, height=1000, units='pix', fillColor=[-1,-1,-1])
+im_stim = visual.ImageStim(win, image=imboard, mask=None, units='pix', pos=[0,0], size=[1400,1000])
+
+clock.reset()
+while clock.getTime() < 10:
+    im_bg.draw()
+    im_stim.draw()
+    win.flip()
+    check_key()
 
 for target in range(0, targetNumber ** 2):
     print('Display target %d' % target)
