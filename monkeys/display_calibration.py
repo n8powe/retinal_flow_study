@@ -1,53 +1,71 @@
-
 import numpy as np
 import time, serial
 from psychopy import core, event, visual, monitors
 import cv2
 
-
 screenNum = 1
 screenRes = np.array([1920, 1080])
-targetNumber = 1
+targetNumber = 3
 
-targetITIMin = 0.1
-targetITIMax = 0.5
+targetITIMin = 0.25
+targetITIMax = 0.75
 targetTargetMin = 1.5
 targetTargetMax = 3.0
 
 targetSizePixMin = 20
 targetSizePixMax = 40
 targetSizePixFreq = 0.5
+targetGapPix = 150
 
 targetFlickerFreq = 2
 
 arucoSizePix = 75
-arucoGapPix = 2* arucoSizePix
+arucoGapPix = 2 * arucoSizePix
+
+tgPosMatX, tgPosMatY = np.meshgrid(np.linspace(-0.5*screenRes[0]+targetGapPix, +0.5*screenRes[0]-targetGapPix, targetNumber),
+                                   np.linspace(-0.5*screenRes[1]+targetGapPix, +0.5*screenRes[1]-targetGapPix, targetNumber))
+tgOrder = np.random.permutation(targetNumber ** 2)
+tgPosMatX = tgPosMatX.flatten()[tgOrder]
+tgPosMatY = tgPosMatY.flatten()[tgOrder]
+
+
+class Talker:
+    TERMINATOR = '\r'.encode('UTF8')
+
+    def __init__(self, timeout=1):
+        self.serial = serial.Serial('/dev/ttyACM0', baudrate=9600, timeout=timeout)
+        while self.serial.in_waiting:
+            self.serial.read()
+
+    def send(self, text: str):
+        line = '%s\r\f' % text
+        self.serial.write(line.encode('utf-8'))
+        reply = self.receive()
+        reply = reply.replace('>>> ', '')  # lines after first will be prefixed by a propmt
+        print('Sent %s received %s' % (text, reply))
+        if reply != text:  # the line should be echoed, so the result should match
+            raise ValueError('Wrong reply')
+
+    def receive(self) -> str:
+        line = self.serial.read_until(self.TERMINATOR)
+        return line.decode('UTF8').strip()
+
+    def close(self):
+        self.serial.close()
+
+
+def check_key():
+    if 'escape' in event.getKeys():
+        core.quit()
+
 
 # Connect to arduino
 try:
     print('Opening serial port')
-    arduino = serial.Serial(port='/dev/ttyACM1', baudrate=9600, timeout=1)
-    # Flush serial port
-    while arduino.in_waiting:
-        arduino.read()
-
-
-    def arduino_write(x):
-        lastSend = 0.0
-        while 1:
-            if time.time() - lastSend > 1:
-                print('Sent C')
-                arduino.write(x.encode())
-                lastSend = time.time()
-            if arduino.in_waiting:
-                data = arduino.readline()
-                print(data.decode())
-                if data.decode() == x:
-                    break
-
-
+    arduino = Talker()
     print('Done')
-except:
+except Exception as e:
+    print(e)
     print('Failed')
 
 # Generate aruco markers
@@ -55,20 +73,21 @@ dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 markersNumber = 4
 
 # Setup window
-# monitor = monitors.Monitor('MonkeyCalib', width=53, distance=50)
-# win = visual.Window(screenRes, screen=screenNum, units="pix", fullscr=False, monitor=monitor)
-win = visual.Window(screenRes, units="pix", screen=0, fullscr=False)
+monitor = monitors.Monitor('MonkeyCalib', width=53, distance=50)
+win = visual.Window(screenRes, screen=screenNum, units="pix", fullscr=False, monitor=monitor)
 clock = core.Clock()
 
-for target in range(0, targetNumber):
+for target in range(0, targetNumber ** 2):
+    print('Display target %d' % target)
     durITI = targetITIMin + np.random.rand() * (targetITIMax - targetITIMin)
     durTarget = targetTargetMin + np.random.rand() * (targetTargetMax - targetTargetMin)
-    tgPos = 0.75 * screenRes * (np.random.rand(2) - 0.5)
+    tgPos = [tgPosMatX[target], tgPosMatY[target]]
     randPhase = np.random.rand() * 2 * np.pi
 
     clock.reset()
     while clock.getTime() < durITI:
         win.flip()
+        check_key()
 
     image_stim = []
     for mm in range(0, markersNumber):
@@ -77,10 +96,9 @@ for target in range(0, targetNumber):
         image_stim.append(visual.ImageStim(win, image=img, mask=None, units='pix', pos=arucoPos, size=50))
 
     try:
-        arduino_write('C')
-        print('Pulse started')
-    except:
-        print('No arduino')
+        arduino.send('S()')
+    except Exception as e:
+        print(e)
 
     clock.reset()
     while clock.getTime() < durTarget:
@@ -98,12 +116,13 @@ for target in range(0, targetNumber):
         target_stim.draw()
 
         win.flip()
-    try:
-        arduino_write('C')
-        print('Pulse ended')
-        arduino.close()
-    except:
-        print('No arduino')
+        check_key()
 
+    try:
+        arduino.send('E()')
+    except Exception as e:
+        print(e)
+
+arduino.close()
 win.close()
 core.quit()
