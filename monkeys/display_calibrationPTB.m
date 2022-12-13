@@ -5,9 +5,9 @@ clear all
 clc
 
 global sid
-serialAddress = '/dev/ttyACM0';
+serialAddress = '/dev/ttyACM1';
 
-screenNum = 0;
+screenNum = 1;
 screenRes = [1920, 1080];
 bg = 128;
 
@@ -17,8 +17,8 @@ charucoPostGap = 1;
 targetNumber = 3;
 targetITIMin = 0.25;
 targetITIMax = 0.75;
-targetTargetMin = 1.5;
-targetTargetMax = 3.0;
+targetTargetMin = 2.0;
+targetTargetMax = 2.0;
 
 targetSizePixMin = 20;
 targetSizePixMax = 40;
@@ -45,7 +45,7 @@ try
             fclose(serial_conn(cc));
         end
     end
-    sid = serial('/dev/ttyACM0', 'BaudRate', 9600, 'Timeout', 0.1, 'Terminator','');
+    sid = serial(serialAddress, 'BaudRate', 9600, 'Timeout', 0.1, 'Terminator','');
     fopen(sid);
     while sid.BytesAvailable
         fread(sid);
@@ -62,6 +62,8 @@ Screen('Preference', 'SkipSyncTests', 1)
 Screen('Preference', 'VisualDebugLevel', 0);
 win = Screen('OpenWindow', screenNum, 128, [0,0,screenRes]);
 
+HideCursor;
+ListenChar(2);
 
 % Load aruco markers
 markersNumber = 4;
@@ -87,6 +89,8 @@ Screen('FillRect', win, bg);
 Screen('Drawtexture', win, im_board, [], board_draw_rect);
 vbl = Screen('Flip', win, 0);
 serialSend('on()');
+
+KbWait;
 
 Screen('FillRect', win, bg);
 vbl = Screen('Flip', win, vbl+charucoDur-0.5/60);
@@ -161,5 +165,6 @@ function cleanup
         serialSend('off()');
         fclose(sid);
     end
+    ListenChar(0);
 end
 
