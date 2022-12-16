@@ -18,7 +18,7 @@ extractOpticalFlow = 0
 
 # Scene video name and path
 dataPath = '../../retinal_flow_data'
-fileName = 'scene_2022-11-23_15-43-41'
+fileName = 'scene_2022-12-16_16-21-39'
 
 triggersData = pd.read_csv('%s/%s.txt' % (dataPath, fileName), sep=',', names=['frameTimes', 'trigger'], header=0,
                    skiprows=0).values
