@@ -29,7 +29,7 @@ targetTargetMin = 4.0;
 targetTargetMax = 4.0;
 targetSpeed = 100;
 
-targetSizePix = 500;
+targetSizePix = 600;
 targetSizePixFreq = 0.5;
 targetGapPix = 150;
 
@@ -63,8 +63,8 @@ end
 
 
 % Setup window
+Screen('Preference', 'SkipSyncTests', 1);
 KbName('UnifyKeyNames');
-Screen('Preference', 'SkipSyncTests', 1)
 Screen('Preference', 'VisualDebugLevel', 0);
 win = Screen('OpenWindow', screenNum, 128, [0,0,screenRes]);
 Screen('BlendFunction', win, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
