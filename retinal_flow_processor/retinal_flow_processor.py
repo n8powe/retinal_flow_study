@@ -55,14 +55,16 @@ class RetinalFlowProcessor:
         if (self.calibFile != -1) and not force_reprocess:
             print('Calibration file already exists: %s' % self.eyePosFile)
             return
+        else:
+            print('Performaing calibration')
 
         # open calibration video
-        vidIn = cv2.VideoCapture('{0}/{1}.mjpeg'.format(self.dataPath, self.config.get('calib', 'videoName')))
+        vidIn = cv2.VideoCapture('%s/%s.mjpeg' % (self.dataPath, self.config.get('calib', 'videoName')))
         frameWidth = int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH))
         frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
         frameSize = (frameWidth, frameHeight)
-        if self.config.get('calib', 'makeVideo'):
+
+        if bool(self.config.get('calib', 'makeVideo')):
             fps = int(vidIn.get(cv2.CAP_PROP_FPS))
             vidOut = cv2.VideoWriter('%s/%s_processed.mp4' % (self.dataPath, self.config.get('calib', 'videoName')),
                                      cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, frameSize)
@@ -75,7 +77,7 @@ class RetinalFlowProcessor:
                                               0.75 * int(self.config.get('calib', 'boxWidthPix')),
                                               dictionary)
 
-        # Extract frames from the 1st trigger where the charuco was displayed and detect it
+        # Extract frames and try to detect charuco board
         print("Detect charuco board")
         allCharucoCorners = []
         allCharucoIds = []
@@ -110,7 +112,7 @@ class RetinalFlowProcessor:
             cv2.aruco.calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, None, None)
         newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, frameSize, 1, frameSize)
 
-        # Show the undistortion
+        # Show undistortion and/or make undistorted movie
         if bool(self.config.get('calib', 'displayResults')) or bool(self.config.get('calib', 'makeVideo')):
             print("Undistort images")
             vidIn.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -124,6 +126,8 @@ class RetinalFlowProcessor:
                     cv2.imshow('picture', undistorted)
                     cv2.waitKey(10)
             cv2.destroyAllWindows()
+
+        print('Placeholder for saving calibration matrix')
 
     def process_eye(self, force_reprocess=0):
         if self.eyePosFile != -1:
