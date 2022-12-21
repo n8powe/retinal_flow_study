@@ -17,13 +17,15 @@ import pandas as pd
 from scipy import interpolate
 from sklearn.linear_model import RANSACRegressor
 import statsmodels.api as sm
+import matplotlib
+matplotlib.use('TKAgg')
 import matplotlib.pyplot as plt
 
 # Load datasets
 dataPath = '../../retinal_flow_data/'
-vidName = 'scene_2022-11-08_19-54-09'
-eyeFile = 'eye_2022-11-08_19-54-09_eyePosition.csv'
-sceneFile = 'scene_2022-11-08_19-54-09_targetPosition.csv'
+vidName = 'scene_2022-12-21_15-08-49'
+eyeFile = 'eye_2022-12-21_15-08-49_eyePosition.csv'
+sceneFile = 'scene_2022-12-21_15-08-49_targetPosition.csv'
 
 eyeDat = pd.read_csv(dataPath+eyeFile, sep=',', names=['F',	'T', 'I', 'X', 'Y', 'D', 'C'], header=0, skiprows=0).values
 sceneDat = pd.read_csv(dataPath+sceneFile, sep=',', names=['T', 'I', 'X', 'Y'], header=0, skiprows=0).values
@@ -48,10 +50,10 @@ plt.show()
 
 
 # Focus on the calibration task
-eyeCalibStart = eyeTrigOn[1]
-eyeCalibStop = eyeTrigOff[1]
-sceneCalibStart = sceneTrigOn[1]
-sceneCalibStop = sceneTrigOff[1]
+eyeCalibStart = eyeTrigOn[0]
+eyeCalibStop = eyeTrigOff[-1]
+sceneCalibStart = sceneTrigOn[0]
+sceneCalibStop = sceneTrigOff[-1]
 
 # Plot eye at target positions as a function of time
 plt.subplot(221)

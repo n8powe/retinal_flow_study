@@ -10,3 +10,4 @@ Pillow
 pupil_detectors
 pyserial
 psychopy
+configparser
