@@ -25,7 +25,7 @@ makePupilVideo = 1
 
 # Eye video name and path
 dataPath = '../../retinal_flow_data/'
-fileName = 'eye_2022-12-19_16-33-16'
+fileName = 'eye_2023-01-06_16-52-27'
 
 # Open eye video and triggers file
 vidIn = cv2.VideoCapture('%s/%s.mjpeg' % (dataPath, fileName))
