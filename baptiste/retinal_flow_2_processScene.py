@@ -17,8 +17,10 @@ import pandas as pd
 extractOpticalFlow = 0
 
 # Scene video name and path
-dataPath = '../../retinal_flow_data'
-fileName = 'scene_2022-11-08_19-54-09'
+# dataPath = '../../retinal_flow_data'
+# fileName = 'scene_2022-11-08_19-54-09'
+dataPath = '/mnt/Data/pitracker/'
+fileName = 'scene_2023-01-13_15-22-30'
 
 triggersData = pd.read_csv('%s/%s.txt' % (dataPath, fileName), sep=',', names=['frameTimes', 'trigger'], header=0,
                    skiprows=0).values
@@ -67,46 +69,46 @@ cornerThreshold = 4
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 board = cv2.aruco.CharucoBoard_create(gridSize[0], gridSize[1], boxWidthPix, 0.75 * boxWidthPix, dictionary)
 
-# Extract frames from the 1st trigger where the charuco was displayed and detect it
-print("Detect charuco board")
-allCharucoCorners = []
-allCharucoIds = []
-vidIn.set(cv2.CAP_PROP_POS_FRAMES, taskStart[0] + 1)
-for ff in range(taskStart[0] + 1, taskStop[0]):
-    ret, frame = vidIn.read()
-    arucoCorners, arucoIds, arucoRejected = cv2.aruco.detectMarkers(frame, dictionary)
-    cv2.aruco.drawDetectedMarkers(frame, arucoCorners, arucoIds, borderColor=(0, 0, 255))
-    writer.write(frame)
-
-    if len(arucoCorners) > 0:
-        charucoNumber, charucoCorners, charucoIds = cv2.aruco.interpolateCornersCharuco(arucoCorners, arucoIds, frame,
-                                                                                        board)
-
-        if charucoNumber > cornerThreshold:
-            allCharucoCorners.append(charucoCorners)
-            allCharucoIds.append(charucoIds)
-
-    cv2.imshow('picture', frame)
-    cv2.waitKey(1)
-
-writer.release()
-cv2.destroyAllWindows()
-
-# Perform camera calibration from charuco board
-print("Perform camera calibration")
-retval, cameraMatrix, distCoeffs, rvecs, tvecs = cv2.aruco.calibrateCameraCharuco(allCharucoCorners, allCharucoIds,
-                                                                                  board, imageSize, None, None)
-newcameramtx, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize)
-
-# For now, this simply allow testing the undistorsion
-print("Undistort images")
-vidIn.set(cv2.CAP_PROP_POS_FRAMES, taskStart[0]+1)
-for ff in range(taskStart[0]+1,taskStop[0]):
-    ret, frame = vidIn.read()
-    undistorted = cv2.undistort(frame, cameraMatrix, distCoeffs, None, newcameramtx)
-    cv2.imshow('picture', undistorted)
-    cv2.waitKey(10)
-cv2.destroyAllWindows()
+# # Extract frames from the 1st trigger where the charuco was displayed and detect it
+# print("Detect charuco board")
+# allCharucoCorners = []
+# allCharucoIds = []
+# vidIn.set(cv2.CAP_PROP_POS_FRAMES, taskStart[0] + 1)
+# for ff in range(taskStart[0] + 1, taskStop[0]):
+#     ret, frame = vidIn.read()
+#     arucoCorners, arucoIds, arucoRejected = cv2.aruco.detectMarkers(frame, dictionary)
+#     cv2.aruco.drawDetectedMarkers(frame, arucoCorners, arucoIds, borderColor=(0, 0, 255))
+#     writer.write(frame)
+#
+#     if len(arucoCorners) > 0:
+#         charucoNumber, charucoCorners, charucoIds = cv2.aruco.interpolateCornersCharuco(arucoCorners, arucoIds, frame,
+#                                                                                         board)
+#
+#         if charucoNumber > cornerThreshold:
+#             allCharucoCorners.append(charucoCorners)
+#             allCharucoIds.append(charucoIds)
+#
+#     cv2.imshow('picture', frame)
+#     cv2.waitKey(1)
+#
+# writer.release()
+# cv2.destroyAllWindows()
+#
+# # Perform camera calibration from charuco board
+# print("Perform camera calibration")
+# retval, cameraMatrix, distCoeffs, rvecs, tvecs = cv2.aruco.calibrateCameraCharuco(allCharucoCorners, allCharucoIds,
+#                                                                                   board, imageSize, None, None)
+# newcameramtx, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, imageSize, 1, imageSize)
+#
+# # For now, this simply allow testing the undistorsion
+# print("Undistort images")
+# vidIn.set(cv2.CAP_PROP_POS_FRAMES, taskStart[0]+1)
+# for ff in range(taskStart[0]+1,taskStop[0]):
+#     ret, frame = vidIn.read()
+#     undistorted = cv2.undistort(frame, cameraMatrix, distCoeffs, None, newcameramtx)
+#     cv2.imshow('picture', undistorted)
+#     cv2.waitKey(10)
+# cv2.destroyAllWindows()
 
 
 # Now extract frames where the eye calibration target was displayed. The eye calibration
@@ -124,8 +126,10 @@ targetPosition = targetPosition.assign(tgX=np.full(targetPosition.shape[0], np.n
 targetPosition = targetPosition.assign(tgY=np.full(targetPosition.shape[0], np.nan))
 
 # Move video to start of task 2 (calibration)
-vidIn.set(cv2.CAP_PROP_POS_FRAMES, taskStart[1] + 1)
-for ff in range(taskStart[1] + 1, taskStop[1]):
+# vidIn.set(cv2.CAP_PROP_POS_FRAMES, taskStart[1] + 1)
+# for ff in range(taskStart[1] + 1, taskStop[1]):
+vidIn.set(cv2.CAP_PROP_POS_FRAMES, 0)
+for ff in range(0, triggersData.shape[0]):
     ret, frame = vidIn.read()
 
     arucoCorners, arucoIds, arucoRejected = cv2.aruco.detectMarkers(frame, dictionary)

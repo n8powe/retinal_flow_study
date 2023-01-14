@@ -26,6 +26,9 @@ dataPath = '../../retinal_flow_data/'
 vidName = 'scene_2022-12-21_15-08-49'
 eyeFile = 'eye_2022-12-21_15-08-49_eyePosition.csv'
 sceneFile = 'scene_2022-12-21_15-08-49_targetPosition.csv'
+# vidName = 'scene_2022-12-19_16-33-16'
+# eyeFile = 'eye_2022-12-19_16-33-16_eyePosition.csv'
+# sceneFile = 'scene_2022-12-19_16-33-16_targetPosition.csv'
 
 eyeDat = pd.read_csv(dataPath+eyeFile, sep=',', names=['F',	'T', 'I', 'X', 'Y', 'D', 'C'], header=0, skiprows=0).values
 sceneDat = pd.read_csv(dataPath+sceneFile, sep=',', names=['T', 'I', 'X', 'Y'], header=0, skiprows=0).values

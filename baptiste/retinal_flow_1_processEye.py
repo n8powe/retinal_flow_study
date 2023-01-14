@@ -24,8 +24,10 @@ import logging
 makePupilVideo = 1
 
 # Eye video name and path
-dataPath = '../../retinal_flow_data/'
-fileName = 'eye_2022-11-08_19-54-09'
+# dataPath = '../../retinal_flow_data/'
+# fileName = 'eye_2022-11-08_19-54-09'
+dataPath = '/mnt/Data/pitracker/'
+fileName = 'eye_2023-01-13_15-22-30'
 
 # Open eye video and triggers file
 vidIn = cv2.VideoCapture('%s/%s.mjpeg' % (dataPath, fileName))
