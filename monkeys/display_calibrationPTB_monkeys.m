@@ -7,34 +7,59 @@ clc
 global sid
 serialAddress = '/dev/ttyACM1';
 
-stimList = {'medias/MF3D_Coo0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
-            'medias/MF3D_Fear0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
-            'medias/MF3D_Neutral1.00_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
-            'medias/MF3D_Tongue0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
-            'medias/MF3D_Yawn0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'};
+% stimList = {'medias/MF3D_Coo0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
+%             'medias/MF3D_Fear0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
+%             'medias/MF3D_Neutral1.00_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
+%             'medias/MF3D_Tongue0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
+%             'medias/MF3D_Yawn0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'};
+
+stimList = {'medias/food_almonds.png'
+    'medias/food_apple.png'
+    'medias/food_avocado.png'
+    'medias/food_banana.png'
+    'medias/food_blackberry.png'
+    'medias/food_carrots.png'
+    'medias/food_cauliflower.png'
+    'medias/food_cherry.png'
+    'medias/food_corn.png'
+%     'medias/food_cucumber.png'
+%     'medias/food_eggplants.png'
+    'medias/food_greenonion.png'
+%     'medias/food_kiwi.png'
+    'medias/food_onion.png'
+    'medias/food_orange.png'
+%     'medias/food_peanut.png'
+    'medias/food_pepper.png'
+    'medias/food_potato.png'
+    'medias/food_salad.png'
+    'medias/food_strawberry.png'
+    'medias/food_tomato.png'};
+
 stimNum = length(stimList);
         
 screenNum = 1;
 screenRes = [1920, 1080];
 bg = 128;
-simSize = [3840,2160];
+% simSize = [3840,2160];
 
 charucoDur = 1;
 charucoPostGap = 1;
 
-targetNumber = 5;
+targetNumber = 20;
 targetITIMin = 0.25;
 targetITIMax = 0.75;
-targetTargetMin = 4.0;
-targetTargetMax = 4.0;
-targetSpeed = 100;
+targetTargetMin = 1.0;
+targetTargetMax = 1.0;
+targetSpeed = 200;
 
-targetSizePix = 600;
+% targetSizePix = 600;
+targetSizePix = 200;
 targetSizePixFreq = 0.5;
 targetGapPix = 150;
+targetRangeX = 800;
 
-arucoSizePix = 6*15;
-arucoGapPix = 4*arucoSizePix;
+arucoSizePix = 12*15;
+arucoGapPix = 2*arucoSizePix;
 
 [tgPosMatX, tgPosMatY] = meshgrid(linspace(targetGapPix,screenRes(1)-targetGapPix,targetNumber),...
                                   linspace(targetGapPix,screenRes(2)-targetGapPix,targetNumber));
@@ -111,7 +136,8 @@ for target=1:targetNumber
     durTarget = targetTargetMin+rand*(targetTargetMax-targetTargetMin);
     currStim = ceil(stimNum*rand);
     tgDir = rand*2*pi;
-    tgPos = -0.5*targetSpeed*durTarget.*[cos(tgDir),sin(tgDir)]+0.5*screenRes;
+    startPos = [targetRangeX*(rand-0.5),0];
+%     tgPos = -0.5*targetSpeed*durTarget.*[cos(tgDir),sin(tgDir)]+0.5*screenRes;
 %     [tgPosMatX(target),tgPosMatY(target)];
 %     randPhase = rand*2*pi;
     
@@ -123,12 +149,15 @@ for target=1:targetNumber
     I(:,:,4) = alpha;
     stimTex = Screen('MakeTexture', win, I);
     stimTex_rect = Screen('Rect', stimTex);
+    disp(currStim)
+    disp(stimTex_rect)
     stimTex_rectScaled = stimTex_rect(3:4)*targetSizePix./max(stimTex_rect);
     
     timeStart = vbl;
     while GetSecs<(timeStart+durTarget)
         tgPos = -0.5*targetSpeed*durTarget.*[cos(tgDir),sin(tgDir)]+0.5*screenRes + ...
-            (GetSecs-timeStart).*targetSpeed.*[cos(tgDir),sin(tgDir)];
+            (GetSecs-timeStart).*targetSpeed.*[cos(tgDir),sin(tgDir)] + ...
+            startPos;
         
         Screen('FillRect', win, bg);
         for mm=1:markersNumber
