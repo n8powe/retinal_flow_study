@@ -23,9 +23,9 @@ import matplotlib.pyplot as plt
 
 # Load datasets
 dataPath = '../../retinal_flow_data/'
-vidName = 'scene_2022-12-21_15-08-49'
-eyeFile = 'eye_2022-12-21_15-08-49_eyePosition.csv'
-sceneFile = 'scene_2022-12-21_15-08-49_targetPosition.csv'
+vidName = 'scene_2023-01-16_15-30-50'
+eyeFile = 'eye_2023-01-16_15-30-50_eyePosition.csv'
+sceneFile = 'scene_2023-01-16_15-30-50_targetPosition.csv'
 # vidName = 'scene_2022-12-19_16-33-16'
 # eyeFile = 'eye_2022-12-19_16-33-16_eyePosition.csv'
 # sceneFile = 'scene_2022-12-19_16-33-16_targetPosition.csv'
@@ -99,12 +99,12 @@ sceneYresampled = fsceneY(resamplingTimes)
 # now perform robust regression of target by eye using ransac
 regX = RANSACRegressor(random_state=0).fit(sm.add_constant(eyeXresampled[np.where(1-np.isnan(sceneXresampled))[0]]),
                                            sceneXresampled[np.where(1-np.isnan(sceneXresampled))[0]])
-regXpredX = np.arange(100, 200)
+regXpredX = np.arange(0, 400)
 regXpredY = regX.predict(sm.add_constant(regXpredX))
 
 regY = RANSACRegressor(random_state=0).fit(sm.add_constant(eyeYresampled[np.where(1-np.isnan(sceneYresampled))[0]]),
                                            sceneYresampled[np.where(1-np.isnan(sceneYresampled))[0]])
-regYpredX = np.arange(100, 200)
+regYpredX = np.arange(0, 400)
 regYpredY = regY.predict(sm.add_constant(regYpredX))
 
 # Plot target as a function of eye, correlation should be obvious

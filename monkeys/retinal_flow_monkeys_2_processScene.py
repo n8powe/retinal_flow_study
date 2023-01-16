@@ -17,12 +17,15 @@ import matplotlib
 matplotlib.use('TKAgg')
 import matplotlib.pyplot as plt
 
-displayResults = 0
+displayResults = 1
+saveCalibrationVideo = 1
 extractOpticalFlow = 0
+
+fps = 30
 
 # Scene video name and path
 dataPath = '../../retinal_flow_data'
-fileName = 'scene_2022-12-21_15-08-49'
+fileName = 'scene_2023-01-16_15-30-50'
 
 triggersData = pd.read_csv('%s/%s.txt' % (dataPath, fileName), sep=',', names=['frameTimes', 'trigger'], header=0,
                    skiprows=0).values
@@ -30,7 +33,6 @@ triggersData = pd.read_csv('%s/%s.txt' % (dataPath, fileName), sep=',', names=['
 # Process video if not processed yet
 if not os.path.exists('%s/%s_processed.mp4' % (dataPath, fileName)):
     vidIn = cv2.VideoCapture('{0}/{1}.mjpeg'.format(dataPath, fileName))
-    fps = 30
     frameWidth = int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH))
     frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
     frameSize = (frameWidth, frameHeight)
@@ -125,6 +127,12 @@ targetPosition = targetPosition.assign(tgY=np.full(targetPosition.shape[0], np.n
 
 # Move video to start of task 2 (calibration)
 vidIn.set(cv2.CAP_PROP_POS_FRAMES, trigOn[1] + 1)
+if saveCalibrationVideo:
+    frameWidth = int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    frameSize = (frameWidth, frameHeight)
+    vidOut = cv2.VideoWriter('%s/%s_calibration.mp4' % (dataPath, fileName),
+                             cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, frameSize)
 for ff in range(trigOn[1] + 1, trigOff[-1]):
     ret, frame = vidIn.read()
 
@@ -149,10 +157,13 @@ for ff in range(trigOn[1] + 1, trigOff[-1]):
     if displayResults:
         cv2.imshow('picture', frame)
         cv2.waitKey(10)
+    if saveCalibrationVideo:
+        vidOut.write(frame)
 
 # save the dataframe as a csv file
 targetPosition.to_csv('%s/%s_targetPosition.csv' % (dataPath, fileName))
-
+if saveCalibrationVideo:
+    vidOut.release()
 cv2.destroyAllWindows()
 
 
