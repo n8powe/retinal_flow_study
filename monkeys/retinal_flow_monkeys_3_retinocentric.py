@@ -21,6 +21,9 @@ import matplotlib
 matplotlib.use('TKAgg')
 import matplotlib.pyplot as plt
 
+displayResults = 0
+saveTrackingVideo = 1
+
 # Load datasets
 dataPath = '../../retinal_flow_data/'
 vidName = 'scene_2023-01-16_15-30-50'
@@ -32,6 +35,10 @@ sceneFile = 'scene_2023-01-16_15-30-50_targetPosition.csv'
 
 eyeDat = pd.read_csv(dataPath+eyeFile, sep=',', names=['F',	'T', 'I', 'X', 'Y', 'D', 'C'], header=0, skiprows=0).values
 sceneDat = pd.read_csv(dataPath+sceneFile, sep=',', names=['T', 'I', 'X', 'Y'], header=0, skiprows=0).values
+
+# remove blinks and data points with low confidence
+mask = np.logical_or(eyeDat[:, 3] < 10, eyeDat[:, 4] < 10, eyeDat[:, 6] < 0.9)
+eyeDat = np.delete(eyeDat, mask, axis=0)
 
 # Find trigger times
 eyeTrigOn, = np.where(eyeDat[1:, 2]-eyeDat[:-1, 2] > 0.5)
@@ -97,15 +104,20 @@ fsceneY = interpolate.interp1d(sceneDat[sceneCalibStart:sceneCalibStop, 0]-scene
 sceneYresampled = fsceneY(resamplingTimes)
 
 # now perform robust regression of target by eye using ransac
-regX = RANSACRegressor(random_state=0).fit(sm.add_constant(eyeXresampled[np.where(1-np.isnan(sceneXresampled))[0]]),
-                                           sceneXresampled[np.where(1-np.isnan(sceneXresampled))[0]])
-regXpredX = np.arange(0, 400)
-regXpredY = regX.predict(sm.add_constant(regXpredX))
+mask = np.logical_not(np.logical_or(np.isnan(sceneXresampled), np.isnan(sceneYresampled)))
+regX = RANSACRegressor(random_state=0).fit(sm.add_constant(np.stack((eyeXresampled[np.where(mask)],
+                                                                     eyeYresampled[np.where(mask)]), axis=1),
+                                                           has_constant='add'),
+                                           sceneXresampled[np.where(mask)])
+regXpredX = np.stack((np.arange(0, 400), 150*np.ones(400)), axis=1)
+regXpredY = regX.predict(sm.add_constant(regXpredX, has_constant='add'))
 
-regY = RANSACRegressor(random_state=0).fit(sm.add_constant(eyeYresampled[np.where(1-np.isnan(sceneYresampled))[0]]),
-                                           sceneYresampled[np.where(1-np.isnan(sceneYresampled))[0]])
-regYpredX = np.arange(0, 400)
-regYpredY = regY.predict(sm.add_constant(regYpredX))
+regY = RANSACRegressor(random_state=0).fit(sm.add_constant(np.stack((eyeXresampled[np.where(mask)],
+                                                                     eyeYresampled[np.where(mask)]), axis=1),
+                                                           has_constant='add'),
+                                           sceneYresampled[np.where(mask)])
+regYpredX = np.stack((200*np.ones(400), np.arange(0, 400)), axis=1)
+regYpredY = regY.predict(sm.add_constant(regYpredX, has_constant='add'))
 
 # Plot target as a function of eye, correlation should be obvious
 plt.subplot(121)
@@ -119,8 +131,8 @@ plt.ylabel('Target Y')
 plt.show()
 
 # Now we replot target positions and predicted eye position
-predEyePosX = regX.predict(sm.add_constant(eyeDat[eyeCalibStart:eyeCalibStop, 3]))
-predEyePosY = regY.predict(sm.add_constant(eyeDat[eyeCalibStart:eyeCalibStop, 4]))
+predEyePosX = regX.predict(sm.add_constant(eyeDat[eyeCalibStart:eyeCalibStop, 3:5], has_constant='add'))
+predEyePosY = regY.predict(sm.add_constant(eyeDat[eyeCalibStart:eyeCalibStop, 3:5], has_constant='add'))
 
 plt.subplot(211)
 plt.plot(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeStart, 1], predEyePosX,
@@ -134,32 +146,32 @@ plt.xlabel('Time (msec)')
 plt.ylabel('Target Y')
 plt.show()
 
-# Predict eye position during the headfix session for comparison with eyelink
-resamplingTimes = np.arange(0, round(eyeDat[eyeStop, 1]-eyeDat[eyeStart, 1]))
-feyeX = interpolate.interp1d(eyeDat[eyeStart:(eyeStop+1), 1]-eyeDat[eyeStart, 1],
-                             eyeDat[eyeStart:(eyeStop+1), 3], kind='nearest',
-                             bounds_error=False)
-eyeXresampled = feyeX(resamplingTimes)
-feyeY = interpolate.interp1d(eyeDat[eyeStart:(eyeStop+1), 1]-eyeDat[eyeStart, 1],
-                             eyeDat[eyeStart:(eyeStop+1), 4], kind='nearest',
-                             bounds_error=False)
-eyeYresampled = feyeY(resamplingTimes)
-
-predHFX = regX.predict(sm.add_constant(eyeXresampled))
-predHFY = regY.predict(sm.add_constant(eyeYresampled))
-
-pd.DataFrame(np.concatenate(([predHFX], [predHFY]), axis=0).T, columns=['eyeX', 'eyeY']).to_csv(dataPath+'eyeCalib.csv')
+# # Predict eye position during the headfix session for comparison with eyelink
+# resamplingTimes = np.arange(0, round(eyeDat[eyeStop, 1]-eyeDat[eyeStart, 1]))
+# feyeX = interpolate.interp1d(eyeDat[eyeStart:(eyeStop+1), 1]-eyeDat[eyeStart, 1],
+#                              eyeDat[eyeStart:(eyeStop+1), 3], kind='nearest',
+#                              bounds_error=False)
+# eyeXresampled = feyeX(resamplingTimes)
+# feyeY = interpolate.interp1d(eyeDat[eyeStart:(eyeStop+1), 1]-eyeDat[eyeStart, 1],
+#                              eyeDat[eyeStart:(eyeStop+1), 4], kind='nearest',
+#                              bounds_error=False)
+# eyeYresampled = feyeY(resamplingTimes)
+#
+# predHFX = regX.predict(sm.add_constant(eyeXresampled))
+# predHFY = regY.predict(sm.add_constant(eyeYresampled))
+#
+# pd.DataFrame(np.concatenate(([predHFX], [predHFY]), axis=0).T, columns=['eyeX', 'eyeY']).to_csv(dataPath+'eyeCalib.csv')
 
 
 # Now regress the whole resampled eye trace
 resamplingTimes = np.arange(eyeDat[0, 1], eyeDat[-1, 1])
-notBlinks = (eyeDat[:, 3]>0)
-feyeX = interpolate.interp1d(eyeDat[notBlinks, 1], eyeDat[notBlinks, 3], kind='nearest', bounds_error=False)
+feyeX = interpolate.interp1d(eyeDat[:, 1], eyeDat[:, 3], kind='nearest', bounds_error=False)
 eyeXresampled = feyeX(resamplingTimes)
-allEyeX = regX.predict(sm.add_constant(eyeXresampled))
-feyeY = interpolate.interp1d(eyeDat[notBlinks, 1], eyeDat[notBlinks, 4], kind='nearest', bounds_error=False)
+feyeY = interpolate.interp1d(eyeDat[:, 1], eyeDat[:, 4], kind='nearest', bounds_error=False)
 eyeYresampled = feyeY(resamplingTimes)
-allEyeY = regY.predict(sm.add_constant(eyeYresampled))
+
+allEyeX = regX.predict(sm.add_constant(np.stack((eyeXresampled, eyeYresampled), axis=1), has_constant='add'))
+allEyeY = regY.predict(sm.add_constant(np.stack((eyeXresampled, eyeYresampled), axis=1), has_constant='add'))
 
 plt.subplot(211)
 plt.plot(resamplingTimes, allEyeX)
@@ -179,8 +191,8 @@ vidOut = cv2.VideoWriter('{0}/{1}_eyePos.mp4'.format(dataPath, vidName),
                              cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, frameSize)
 
 
-predX = regX.predict(sm.add_constant(eyeDat[:, 3]))
-predY = regX.predict(sm.add_constant(eyeDat[:, 4]))
+predX = regX.predict(sm.add_constant(eyeDat[:, 3:5], has_constant='add'))
+predY = regY.predict(sm.add_constant(eyeDat[:, 3:5], has_constant='add'))
 
 ff = -1
 while 1:
@@ -193,8 +205,12 @@ while 1:
         gazeY = predY[eyeSample]
         cv2.circle(frame, (int(gazeX), int(gazeY)), 10, (0, 0, 255), -1)
 
-        cv2.imshow('picture', frame)
-        cv2.waitKey(10)
+        if displayResults:
+            cv2.imshow('picture', frame)
+            cv2.waitKey(10)
+        if saveTrackingVideo:
+            vidOut.write(frame)
     else:
         break
 vidIn.release()
+vidOut.release()

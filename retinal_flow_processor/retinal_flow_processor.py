@@ -36,7 +36,7 @@ class RetinalFlowProcessor:
         for file in fileList:
             if file.__contains__('calib'):
                 self.calibFile = file
-            elif file.__contains__(datetime.datetime.strftime(sessionDate ,'eye_%YYYY-%mm-%dd')):
+            elif file.__contains__(datetime.datetime.strftime(sessionDate, 'eye_%YYYY-%mm-%dd')):
                 if file.__contains__('.mjpeg'):
                     self.eyeVideoRaw = file
                 elif file.__contains__('processed'):
@@ -45,7 +45,7 @@ class RetinalFlowProcessor:
                     self.eyeVideoPupil = file
                 elif file.__contains__('eyePos'):
                     self.eyePosFile = file
-            elif file.__contains__(datetime.datetime.strftime(sessionDate ,'scene_%YYYY-%mm-%dd')):
+            elif file.__contains__(datetime.datetime.strftime(sessionDate, 'scene_%YYYY-%mm-%dd')):
                 if file.__contains__('.mjpeg'):
                     self.sceneVideoRaw = file
                 elif file.__contains__('processed'):

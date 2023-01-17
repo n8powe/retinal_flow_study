@@ -52,6 +52,7 @@ regressors = np.vstack([np.ravel(x), np.ravel(y), np.sqrt(np.power(x, 2) + np.po
 
 # create 2D detector from pupillabs
 detector_2d = Detector2D()
+detector_2d.update_properties({'pupil_size_min': 25})
 
 # # create pye3D detector from pupillabs (I think unused for now)
 # camera = CameraModel(focal_length=561.5, resolution=frameSize)
@@ -123,6 +124,7 @@ for frameNum in range(0, triggersData.shape[0]):
             # cv2.imshow("Pupil", drawing)
             # cv2.waitKey(1)
             vidPupil.write(drawing)
+
     except:
         pass
 # save the dataframe as a csv file
