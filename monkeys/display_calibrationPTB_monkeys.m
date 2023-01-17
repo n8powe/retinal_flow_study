@@ -45,7 +45,7 @@ bg = 128;
 charucoDur = 1;
 charucoPostGap = 1;
 
-targetNumber = 20;
+targetNumber = 40;
 targetITIMin = 0.25;
 targetITIMax = 0.75;
 targetTargetMin = 1.0;
