@@ -34,7 +34,8 @@ sceneFile = 'scene_2023-01-16_15-30-50_targetPosition.csv'
 # sceneFile = 'scene_2022-12-19_16-33-16_targetPosition.csv'
 
 eyeDat = pd.read_csv(dataPath+eyeFile, sep=',', names=['F',	'T', 'I', 'X', 'Y', 'D', 'C'], header=0, skiprows=0).values
-sceneDat = pd.read_csv(dataPath+sceneFile, sep=',', names=['T', 'I', 'X', 'Y'], header=0, skiprows=0).values
+
+sceneDat = pd.read_csv(dataPath+sceneFile, sep=',', names=['F', 'T', 'I', 'X', 'Y'], header=0, skiprows=0).values
 
 # remove blinks and data points with low confidence
 mask = np.logical_or(eyeDat[:, 3] < 10, eyeDat[:, 4] < 10, eyeDat[:, 6] < 0.9)
@@ -43,15 +44,15 @@ eyeDat = np.delete(eyeDat, mask, axis=0)
 # Find trigger times
 eyeTrigOn, = np.where(eyeDat[1:, 2]-eyeDat[:-1, 2] > 0.5)
 eyeTrigOff, = np.where(eyeDat[1:, 2]-eyeDat[:-1, 2] < -0.5)
-sceneTrigOn, = np.where(sceneDat[1:, 1]-sceneDat[:-1, 1] > 0.5)
-sceneTrigOff, = np.where(sceneDat[1:, 1]-sceneDat[:-1, 1] < -0.5)
+sceneTrigOn, = np.where(sceneDat[1:, 2]-sceneDat[:-1, 2] > 0.5)
+sceneTrigOff, = np.where(sceneDat[1:, 2]-sceneDat[:-1, 2] < -0.5)
 eyeStart = eyeTrigOn[0]
 eyeStop = eyeTrigOff[-1]
 sceneStart = sceneTrigOn[0]
 sceneStop = sceneTrigOff[-1]
 
 plt.plot(eyeDat[eyeStart-10:eyeStop+10, 1]-eyeDat[eyeStart, 1], eyeDat[eyeStart-10:eyeStop+10, 2],
-         sceneDat[sceneStart-10:sceneStop+10, 0]-sceneDat[sceneStart, 0], sceneDat[sceneStart-10:sceneStop+10, 1])
+         sceneDat[sceneStart-10:sceneStop+10, 1]-sceneDat[sceneStart, 1], sceneDat[sceneStart-10:sceneStop+10, 2])
 plt.xlabel('Time (msec)')
 plt.ylabel('Trigger')
 plt.title("Triggers")
@@ -73,11 +74,11 @@ plt.subplot(222)
 plt.plot(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeStart, 1], eyeDat[eyeCalibStart:eyeCalibStop, 4]),
 plt.ylabel('Eye Y')
 plt.subplot(223)
-plt.plot(sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneStart, 0], sceneDat[sceneCalibStart:sceneCalibStop, 2])
+plt.plot(sceneDat[sceneCalibStart:sceneCalibStop, 1]-sceneDat[sceneStart, 1], sceneDat[sceneCalibStart:sceneCalibStop, 3])
 plt.xlabel('Time (msec)')
 plt.ylabel('Target X')
 plt.subplot(224)
-plt.plot(sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneStart, 0], sceneDat[sceneCalibStart:sceneCalibStop, 3])
+plt.plot(sceneDat[sceneCalibStart:sceneCalibStop, 1]-sceneDat[sceneStart, 1], sceneDat[sceneCalibStart:sceneCalibStop, 4])
 plt.xlabel('Time (msec)')
 plt.ylabel('Target Y')
 plt.show()
@@ -90,16 +91,16 @@ feyeX = interpolate.interp1d(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeCal
                              eyeDat[eyeCalibStart:eyeCalibStop, 3], kind='nearest',
                              bounds_error=False)
 eyeXresampled = feyeX(resamplingTimes)
-fsceneX = interpolate.interp1d(sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneCalibStart, 0],
-                               sceneDat[sceneCalibStart:sceneCalibStop, 2], kind='nearest',
+fsceneX = interpolate.interp1d(sceneDat[sceneCalibStart:sceneCalibStop, 1]-sceneDat[sceneCalibStart, 1],
+                               sceneDat[sceneCalibStart:sceneCalibStop, 3], kind='nearest',
                              bounds_error=False)
 sceneXresampled = fsceneX(resamplingTimes)
 feyeY = interpolate.interp1d(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeCalibStart, 1],
                              eyeDat[eyeCalibStart:eyeCalibStop, 4], kind='nearest',
                              bounds_error=False)
 eyeYresampled = feyeY(resamplingTimes)
-fsceneY = interpolate.interp1d(sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneCalibStart, 0],
-                               sceneDat[sceneCalibStart:sceneCalibStop, 3], kind='nearest',
+fsceneY = interpolate.interp1d(sceneDat[sceneCalibStart:sceneCalibStop, 1]-sceneDat[sceneCalibStart, 1],
+                               sceneDat[sceneCalibStart:sceneCalibStop, 4], kind='nearest',
                              bounds_error=False)
 sceneYresampled = fsceneY(resamplingTimes)
 
@@ -136,12 +137,12 @@ predEyePosY = regY.predict(sm.add_constant(eyeDat[eyeCalibStart:eyeCalibStop, 3:
 
 plt.subplot(211)
 plt.plot(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeStart, 1], predEyePosX,
-         sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneStart, 0], sceneDat[sceneCalibStart:sceneCalibStop, 2], 'o')
+         sceneDat[sceneCalibStart:sceneCalibStop, 1]-sceneDat[sceneStart, 1], sceneDat[sceneCalibStart:sceneCalibStop, 3], 'o')
 plt.xlabel('Time (msec)')
 plt.ylabel('Target X')
 plt.subplot(212)
 plt.plot(eyeDat[eyeCalibStart:eyeCalibStop, 1]-eyeDat[eyeStart, 1], predEyePosY,
-         sceneDat[sceneCalibStart:sceneCalibStop, 0]-sceneDat[sceneStart, 0], sceneDat[sceneCalibStart:sceneCalibStop, 3], 'o')
+         sceneDat[sceneCalibStart:sceneCalibStop, 1]-sceneDat[sceneStart, 1], sceneDat[sceneCalibStart:sceneCalibStop, 4], 'o')
 plt.xlabel('Time (msec)')
 plt.ylabel('Target Y')
 plt.show()
@@ -182,35 +183,35 @@ plt.show()
 # Generate a video with the eye-position on it
 
 # Open video and trigger files
-vidIn = cv2.VideoCapture('%s/%s_processed.mp4' % (dataPath, vidName))
-fps = 30
-frameWidth = int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH))
-frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
-frameSize = (frameWidth, frameHeight)
-vidOut = cv2.VideoWriter('{0}/{1}_eyePos.mp4'.format(dataPath, vidName),
-                             cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, frameSize)
+if saveTrackingVideo:
+    vidIn = cv2.VideoCapture('%s/%s_processed.mp4' % (dataPath, vidName))
+    fps = 30
+    frameWidth = int(vidIn.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frameHeight = int(vidIn.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    frameSize = (frameWidth, frameHeight)
+    vidOut = cv2.VideoWriter('{0}/{1}_eyePos.mp4'.format(dataPath, vidName),
+                                 cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, frameSize)
 
 
-predX = regX.predict(sm.add_constant(eyeDat[:, 3:5], has_constant='add'))
-predY = regY.predict(sm.add_constant(eyeDat[:, 3:5], has_constant='add'))
+    predX = regX.predict(sm.add_constant(eyeDat[:, 3:5], has_constant='add'))
+    predY = regY.predict(sm.add_constant(eyeDat[:, 3:5], has_constant='add'))
 
-ff = -1
-while 1:
-    ret, frame = vidIn.read()
-    if ret:
-        ff = ff+1
-        eyeSample = np.where(eyeDat[:, 1]-eyeDat[eyeStart, 1] > sceneDat[ff, 0]-sceneDat[sceneStart, 0])[0][0]
-        print(eyeSample)
-        gazeX = predX[eyeSample]
-        gazeY = predY[eyeSample]
-        cv2.circle(frame, (int(gazeX), int(gazeY)), 10, (0, 0, 255), -1)
+    ff = -1
+    while 1:
+        ret, frame = vidIn.read()
+        if ret:
+            ff = ff+1
+            eyeSample = np.where(eyeDat[:, 1]-eyeDat[eyeStart, 1] > sceneDat[ff, 1]-sceneDat[sceneStart, 1])[0][0]
+            print(eyeSample)
+            gazeX = predX[eyeSample]
+            gazeY = predY[eyeSample]
+            cv2.circle(frame, (int(gazeX), int(gazeY)), 10, (0, 0, 255), -1)
 
-        if displayResults:
-            cv2.imshow('picture', frame)
-            cv2.waitKey(10)
-        if saveTrackingVideo:
+            if displayResults:
+                cv2.imshow('picture', frame)
+                cv2.waitKey(10)
             vidOut.write(frame)
-    else:
-        break
-vidIn.release()
-vidOut.release()
+        else:
+            break
+    vidIn.release()
+    vidOut.release()

@@ -25,7 +25,7 @@ fps = 30
 
 # Scene video name and path
 dataPath = '../../retinal_flow_data'
-fileName = 'scene_2023-01-16_15-30-50'
+fileName = 'scene_2023-02-24_15-00-54'
 
 triggersData = pd.read_csv('%s/%s.txt' % (dataPath, fileName), sep=',', names=['frameTimes', 'trigger'], header=0,
                    skiprows=0).values
