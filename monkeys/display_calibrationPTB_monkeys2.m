@@ -5,7 +5,7 @@ clear all
 clc
 
 global sid
-serialAddress = '/dev/ttyACM1';
+serialAddress = '/dev/ttyACM0';
 
 % stimList = {'medias/MF3D_Coo0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
 %             'medias/MF3D_Fear0.25_Haz0_Hel0_Gaz0_Gel0_RGBA.png'
@@ -45,12 +45,12 @@ bg = 128;
 charucoDur = 1;
 charucoPostGap = 1;
 
-targetNumber = 40;
+targetNumber = 30;
 targetJump = 300;
 targetITIMin = 0.25;
 targetITIMax = 0.75;
-targetFixMin = 0.25;
-targetFixMax = 0.5;
+targetFixMin = 0.5;
+targetFixMax = 0.75;
 targetDurMin = 0.5;
 targetDurMax = 0.5;
 
@@ -123,17 +123,19 @@ board_draw_rect = [ 0.5*(screenRes(1)-im_board_rect(3)),...
 Screen('FillRect', win, bg);
 Screen('Drawtexture', win, im_board, [], board_draw_rect);
 vbl = Screen('Flip', win, 0);
-serialSend('on()');
+serialSend('triggeron()');
 
 KbWait;
 
 Screen('FillRect', win, bg);
 vbl = Screen('Flip', win, vbl+charucoDur-0.5/60);
-serialSend('off()');
+serialSend('triggeroff()');
 
 
 %% Then display calibration targets
 for target=1:targetNumber
+    fprintf('Target %i/%i\n',target,targetNumber);
+
     durITI = targetITIMin+rand*(targetITIMax-targetITIMin);
     durFix = targetFixMin+rand*(targetFixMax-targetFixMin);
     durTarget = targetDurMin+rand*(targetDurMax-targetDurMin);
@@ -147,14 +149,12 @@ for target=1:targetNumber
     
     Screen('FillRect', win, bg);
     vbl = Screen('Flip', win, vbl+durITI-0.5/60);
-    serialSend('on()');
+    serialSend('triggeron()');
     
     [I,~,alpha] = imread(stimList{currStim});
     I(:,:,4) = alpha;
     stimTex = Screen('MakeTexture', win, I);
     stimTex_rect = Screen('Rect', stimTex);
-    disp(currStim)
-    disp(stimTex_rect)
     stimTex_rectScaled = stimTex_rect(3:4)*targetSizePix./max(stimTex_rect);
     
     timeStart = vbl;
@@ -179,8 +179,12 @@ for target=1:targetNumber
     
     Screen('FillRect', win, bg);
     vbl = Screen('Flip', win, vbl+0.5/60);
-    serialSend('off()');
+    serialSend('triggeroff()');
     
+    serialSend('rewardon()');
+    pause(0.5);
+    serialSend('rewardoff()');
+
 end
 
 
@@ -212,6 +216,7 @@ function cleanup
     Screen('CloseAll');
     if ~(sid==-1)
         serialSend('off()');
+        serialSend('rewardoff()');
         fclose(sid);
     end
     ListenChar(0);
