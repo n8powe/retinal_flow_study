@@ -4,7 +4,8 @@ from psychopy import core, event, visual, monitors
 from psychopy.hardware import crs
 import cv2
 
-serialAddress = '/dev/ttyACM1'
+# serialAddress = '/dev/ttyACM1'
+serialAddress = 'COM3'
 
 screenNum = 1
 screenRes = np.array([1920, 1080])
@@ -76,8 +77,10 @@ dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 markersNumber = 4
 
 # Generate charuco board
-board = cv2.aruco.CharucoBoard_create(7, 5, 1, .8, dictionary)
-imboard = 2.0*board.draw((1400, 1000))/255.0-1
+# board = cv2.aruco.CharucoBoard_create(7, 5, 1, .8, dictionary)
+board = cv2.aruco.CharucoBoard((7, 5), 1, .8, dictionary)
+# imboard = 2.0*board.draw((1400, 1000))/255.0-1
+imboard = 2.0*board.generateImage((1400, 1000))/255.0-1
 
 # Setup window
 monitor = monitors.Monitor('MonkeyCalib', width=53, distance=50)
